@@ -1,16 +1,15 @@
 package analizadorlexico;
 
-/**
- * Utilities for AnalizadorLexico class
- * 
- * @author: D. Emiliano F.
- * @see analizadorlexico.AnalizadorLexico;
- */
-
 import java.util.ArrayList;
 
+/**
+ * Ignores comments in file for AnalizadorLexico class
+ * 
+ * @author D. Emiliano F.
+ * @see analizadorlexico.AnalizadorLexico
+ */
 
-public class CommentsManager extends Manager {
+class CommentsManager extends Manager {
     
     private CommentsManager() {};
     

@@ -1,15 +1,14 @@
 package analizadorlexico;
 
+import java.util.ArrayList;
+
 /**
  * Utilities for AnalizadorLexico class
  * 
- * @author: D. Emiliano F.
- * @see analizadorlexico.AnalizadorLexico;
+ * @author D. Emiliano F.
+ * @see analizadorlexico.AnalizadorLexico
  */
-
-import java.util.ArrayList;
-
-public abstract class Manager {
+abstract class Manager {
     
     /**
      * @param column the current column in line

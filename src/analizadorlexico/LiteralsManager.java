@@ -1,15 +1,15 @@
 package analizadorlexico;
 
+import java.util.ArrayList;
+
 /**
  * Methods for literals in AnalizadorLexico class
  * 
- * @author: D. Emiliano F.
- * @see analizadorlexico.AnalizadorLexico;
+ * @author D. Emiliano F.
+ * @see analizadorlexico.AnalizadorLexico
  */
 
-import java.util.ArrayList;
-
-public class LiteralsManager extends Manager {
+class LiteralsManager extends Manager {
     private LiteralsManager(){}
     
     /**

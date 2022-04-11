@@ -1,15 +1,15 @@
 package analizadorlexico;
 
+import java.util.Scanner;
+
 /**
  * Implements methods for whitespaces in AnalizadorLexico class
  * 
- * @author: D. Emiliano F.
- * @see analizadorlexico.AnalizadorLexico;
+ * @author D. Emiliano F.
+ * @see analizadorlexico.AnalizadorLexico
  */
 
-import java.util.Scanner;
-
-public class WhitespacesManager extends Manager {
+class WhitespacesManager extends Manager {
     
     private WhitespacesManager(){};
     

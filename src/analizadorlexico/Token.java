@@ -3,7 +3,7 @@ package analizadorlexico;
 /**
  * Object that returns token, lexeme and current line in file
  * 
- * @author: D. Emiliano F.
+ * @author D. Emiliano F.
  * @see analizadorlexico.AnalizadorLexico;
  */
 

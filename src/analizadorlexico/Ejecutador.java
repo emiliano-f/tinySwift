@@ -1,15 +1,16 @@
 package analizadorlexico;
 
-/**
- * Launcher for etapa1. TinySwift+
- * @author: D. Emiliano F.
- * @see analizadorlexico.AnalizadorLexico;
- */
-
 import java.util.Arrays;
 
-public class Ejecutador {
+/**
+ * Launcher for etapa1. TinySwift+
+ * 
+ * @author D. Emiliano F.
+ * @see analizadorlexico.AnalizadorLexico
+ */
 
+public class Ejecutador {
+    
     /**
      * @param args the command line arguments
      * Valid input: java -jar etapa1.jar ARCHIVO_FUENTE [ARCHIVO_SALIDA]

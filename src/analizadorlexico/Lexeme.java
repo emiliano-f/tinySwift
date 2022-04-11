@@ -2,7 +2,7 @@ package analizadorlexico;
 
 /**
  * Lexeme class for tinySwift+
- * @author: D. Emiliano F.
+ * @author D. Emiliano F.
  * @see analizadorlexico.AnalizadorLexico
  */
 

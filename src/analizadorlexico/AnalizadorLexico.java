@@ -11,10 +11,10 @@ import java.util.NoSuchElementException;
 
 /**
  * Lexical Analyzer definition for tinySwift+
- * @author: D. Emiliano F.
+ * 
+ * @author D. Emiliano F.
  * @see ejecutador.Ejecutador
  */
-
 class AnalizadorLexico {
     
     // Current line in file
@@ -108,7 +108,7 @@ class AnalizadorLexico {
         
         // Delete first symbol '"' from stringlit
         if (token.equals("stringlit") || token.equals("charlit")){
-            lexeme = lexeme.substring(1, lexeme .length());
+            lexeme = lexeme.substring(1, lexeme.length());
         }
         
         return new Token(token,
@@ -158,7 +158,6 @@ class AnalizadorLexico {
             
             // It's a id
             if (Character.isLetter(first) || first == '_'){
-                                
                 while (isInLine() &&
                        (Character.isLetter(line.charAt(getColumn())) ||
                        Character.isDigit(line.charAt(getColumn())) ||
@@ -384,17 +383,18 @@ class AnalizadorLexico {
             }
         }
         
-        int idx = binarySearch(lexeme);
         // Index not found in table
+        int idx = binarySearch(lexeme);
+        idx = actualIndex(idx, lexeme);
+        
         if (idx == -1){
             //asumo que cualquier simbolo posterior constituye un id
+            if (Character.isUpperCase(lexeme.charAt(0))){
+                return "idclass";
+            }
             return "id";
         }
         
-        idx = actualIndex(idx, lexeme);
-        if (idx == -1){
-            return "id";
-        }
         return table.get(idx).getToken();
     }
     
@@ -440,6 +440,10 @@ class AnalizadorLexico {
      * @return the true index where the searched token is found
      */
     private int actualIndex(int idx, String lexeme) {
+        
+        if (idx < 0){
+            return -1;
+        }
         
         int l = idx, r = idx+1;
         

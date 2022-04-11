@@ -3,7 +3,7 @@ package analizadorlexico;
 /**
  * Object that returns the current location in the file
  * 
- * @author: D. Emiliano F.
+ * @author D. Emiliano F.
  * @see analizadorlexico.AnalizadorLexico;
  */
 
