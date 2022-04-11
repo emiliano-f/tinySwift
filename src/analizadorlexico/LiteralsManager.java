@@ -48,7 +48,7 @@ public class LiteralsManager extends Manager {
                             literal += '\\';
                         case '\\':
                         case '"':
-                            literal += line.charAt(column); //comprobar si esto se ejecuta para r,t,n
+                            literal += line.charAt(column);
                             break;
                         default:
                             throw new IllegalTokenException(row,
@@ -73,38 +73,36 @@ public class LiteralsManager extends Manager {
         
     }
     
-    /*
+    
     static Location charConsumption(ArrayList file,
                                     String line,
                                     int row,
                                     int column)
         throws NoSuchTokenException {
             
-        String literal;
+        String literal = "'";
         
         try{
             if (line.charAt(column) == '\\'){
+                literal += "\\";
                 column += 1;
                 switch(line.charAt(column)){
                     case 'r':
-                        literal = "\r"; 
-                        break;
                     case 't':
-                        literal = "\t";
-                        break;
                     case 'n':
-                        literal = "\n";
-                        break;
                     case '\'':
-                        literal = "'";
+                    case '\\':
+                        literal += line.charAt(column);
                         break;
                     default:
-                        throw new NoSuchTokenException("Invalid escape sequence in literal");
+                        throw new NoSuchTokenException("Invalid escape sequence"
+                                                       +" in character literal");
                 }
             }
             else{
-                literal = String.valueOf(line.charAt(column));
+                literal += String.valueOf(line.charAt(column));
             }
+            
             column += 1;
             
             if (line.charAt(column) != '\''){
@@ -115,11 +113,11 @@ public class LiteralsManager extends Manager {
             throw new NoSuchTokenException("Unterminated char literal");
         }
         
-        column += 1;
-        return new Location(column, row, line, literal); //agrego char a literal o convierto literal a string
+        column += 1; 
+        return new Location(column, row, line, literal); 
         
     }
-    */
+    
     
     /**
      * Determines if an lexeme is Int literal

@@ -107,7 +107,7 @@ class AnalizadorLexico {
         String token = getToken(lexeme);
         
         // Delete first symbol '"' from stringlit
-        if (token.equals("stringlit")){
+        if (token.equals("stringlit") || token.equals("charlit")){
             lexeme = lexeme.substring(1, lexeme .length());
         }
         
@@ -228,11 +228,25 @@ class AnalizadorLexico {
                         //Later, by default, we add a column.
                         addColumn(-1);
                         break;
-
+                    
+                    // Char literal
+                    case '\'':
+                        temp = LiteralsManager.charConsumption(file,
+                                                               line,
+                                                               getRow(),
+                                                               getColumn());
+                        update(temp);
+                        addColumn(-1);
+                        lexeme = temp.getLiteral();
+                        break;
+                        
                     // String literal
                     case '"':
                         // Get string literal
-                        temp = LiteralsManager.stringConsumption(file, line, getRow(), getColumn());
+                        temp = LiteralsManager.stringConsumption(file,
+                                                                 line,
+                                                                 getRow(),
+                                                                 getColumn());
                         // Update last line, row and column from LiteralManager
                         update(temp);
                         addColumn(-1);
@@ -240,7 +254,7 @@ class AnalizadorLexico {
                         //if (temp.hasLiteral()){
                         lexeme = temp.getLiteral();
                         //}
-                    
+                        break;
                     // Comment or division
                     case '/': 
 
@@ -351,9 +365,15 @@ class AnalizadorLexico {
      */
     private String getToken(String lexeme){
         
+        
+        if (lexeme.charAt(0) == '\''){
+            return "charlit";
+        }
+        
         // String literal begins with '"'
         // This case occurs with empty literals
-        if (lexeme.length() > 0 && lexeme.charAt(0) == '"'){
+        // Second condition differentiates empty string from "\"" string
+        if (lexeme.charAt(0) == '"'){
             return "stringlit";
         }
         
@@ -452,7 +472,7 @@ class AnalizadorLexico {
         ArrayList<Token> table = new ArrayList<Token>();
         String[] tokens = {"apos", "lbrace", "rbrace",
                            "lparent", "rparent", "semicolon", "colon",
-                           "comma", "dot", "percent",
+                           "comma", "dot", "percent", "apos",
                            "assign", "lbracket", "rbracket",
                            "plus", "minus", "ast",
                            "slash", "excmark", "less",
@@ -469,7 +489,7 @@ class AnalizadorLexico {
        
         String[] lexemes = {"'", "{", "}",
                             "(", ")", ";", ":",
-                            ",", ".", "%",
+                            ",", ".", "%", "'",
                             "=", "[", "]",
                             "+", "-", "*",
                             "/", "!", "<",
