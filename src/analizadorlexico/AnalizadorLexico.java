@@ -87,18 +87,17 @@ class AnalizadorLexico {
      * Returns next token from file
      * 
      * @return Token object that contains token, lexeme and line number
-     * @throws NoSuchTokenException
      * @throws IllegalTokenException 
      */
     public Token nextToken() 
-        throws NoSuchTokenException, IllegalTokenException{
+        throws IllegalTokenException{
         
         Lexeme temp;
         
         //Loops if there are comments
         do{
             if (!hasNextValidSymbol()){
-                throw new NoSuchTokenException("Token not found");
+                return null;
             }
             temp = getLexeme();
         } while(!temp.hasLexeme());
@@ -124,11 +123,9 @@ class AnalizadorLexico {
      * 
      * @return Lexeme object that contains an availability indicator and lexeme 
      * @throws IllegalTokenException
-     * @throws NoSuchTokenException 
      */
     private Lexeme getLexeme()
-            throws IllegalTokenException,
-                   NoSuchTokenException {
+            throws IllegalTokenException{
         
         /**
          * 1. Deleted whitespaces (by hasNextValidSymbol())
@@ -142,6 +139,8 @@ class AnalizadorLexico {
         String lexeme = String.valueOf(first);
         // We have a lexeme. False when gets a comment
         boolean hasLexeme = true;
+        // Column to report in error case
+        int firstColumn = getColumnFile();
         // Next column
         addColumn(1);
         
@@ -153,6 +152,16 @@ class AnalizadorLexico {
                 lexeme += line.charAt(getColumn());
                 addColumn(1);
             }
+            
+            // Aseguramos que el numero tenga a continuacion caracteres
+            // propios de un identificador
+            if (isInLine() && 
+                (Character.isLetter(line.charAt(getColumn())) || 
+                line.charAt(getColumn()) == '_')){
+                    throw new IllegalTokenException(getRow(),
+                                                    firstColumn,
+                                                    "Invalid number");
+                }
         }
         else{
             
@@ -179,7 +188,7 @@ class AnalizadorLexico {
                     case '|':
                         if (!isInLine() || (line.charAt(getColumn()) != '|')){
                             throw new IllegalTokenException(getRow(),
-                                                            getColumnFile(),
+                                                            firstColumn,
                                                             "Token not valid");
                         }
                         lexeme += "|";
@@ -188,7 +197,7 @@ class AnalizadorLexico {
                     case '&':
                         if (!isInLine() || (line.charAt(getColumn()) != '&')){
                             throw new IllegalTokenException(getRow(),
-                                                            getColumnFile(),
+                                                            firstColumn,
                                                             "Token not valid");
                         }
                         lexeme += "&";
@@ -287,7 +296,7 @@ class AnalizadorLexico {
                         break;
                     default:
                         throw new IllegalTokenException(getRow(),
-                                                        getColumn(),
+                                                        firstColumn,
                                                         "Invalid character");
                 }
                 // Update column when leaving switch block
@@ -474,26 +483,26 @@ class AnalizadorLexico {
      */
     private ArrayList loadTable(){
         ArrayList<Token> table = new ArrayList<Token>();
-        String[] tokens = {"apos", "lbrace", "rbrace",
+        String[] tokens = {"lbrace", "rbrace",
                            "lparent", "rparent", "semicolon", "colon",
-                           "comma", "dot", "percent", "apos",
+                           "comma", "dot", "mod",
                            "assign", "lbracket", "rbracket",
                            "plus", "minus", "ast",
-                           "slash", "excmark", "less",
+                           "div", "excmark", "less",
                            "greater", "leq", "geq",
                            "or", "and", "noteq", 
                            "equal", "if", "null",
                            "var", "new", "int", 
-                           "mainmet", "maincls", "init",
+                           "init",
                            "self", "void", "func", 
                            "else", "char", "true",
                            "bool", "false", "array",
                            "while", "class", "static",
                            "string", "return", "private"};
        
-        String[] lexemes = {"'", "{", "}",
+        String[] lexemes = {"{", "}",
                             "(", ")", ";", ":",
-                            ",", ".", "%", "'",
+                            ",", ".", "%", 
                             "=", "[", "]",
                             "+", "-", "*",
                             "/", "!", "<",
@@ -501,7 +510,7 @@ class AnalizadorLexico {
                             "||", "&&", "!=",
                             "==", "if", "nil",
                             "var", "new", "Int", 
-                            "main", "Main", "init",
+                            "init",
                             "self", "void", "func", 
                             "else", "Char", "true",
                             "Bool", "false", "Array",

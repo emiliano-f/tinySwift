@@ -22,18 +22,17 @@ class CommentsManager extends Manager {
      * @param row the current row (line number)
      * @param column the current column in line
      * @return Line, row and column updated
-     * @throws NoSuchTokenException if the comment is incomplete (comment block)
+     * @throws IllegalTokenException if the comment is incomplete (comment block)
      */
     static Location extract(ArrayList file,
                             String line,
                             int row,
                             int column)
     
-        throws NoSuchTokenException,
-               IllegalTokenException {
+        throws IllegalTokenException {
         
         Location toReturn = new Location(column, row, line);
-        int errCol = column-1;
+        int errCol = column;
         
         // Check comment type
         try{

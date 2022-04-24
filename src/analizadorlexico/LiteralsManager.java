@@ -78,7 +78,7 @@ class LiteralsManager extends Manager {
                                     String line,
                                     int row,
                                     int column)
-        throws NoSuchTokenException {
+        throws IllegalTokenException {
             
         String literal = "'";
         
@@ -86,6 +86,7 @@ class LiteralsManager extends Manager {
             if (line.charAt(column) == '\\'){
                 literal += "\\";
                 column += 1;
+                
                 switch(line.charAt(column)){
                     case 'r':
                     case 't':
@@ -95,22 +96,29 @@ class LiteralsManager extends Manager {
                         literal += line.charAt(column);
                         break;
                     default:
-                        throw new NoSuchTokenException("Invalid escape sequence"
-                                                       +" in character literal");
+                        throw new IllegalTokenException(row, column,
+                                                        "Invalid escape sequence \\"+
+                                                        String.valueOf(line.charAt(column))+
+                                                        " in character literal" );
                 }
             }
             else{
+                if (line.charAt(column) == '\''){
+                    throw new IllegalTokenException(row, column,
+                                                    "Empty char literals is not permited");
+                }
                 literal += String.valueOf(line.charAt(column));
             }
-            
             column += 1;
             
             if (line.charAt(column) != '\''){
-                throw new NoSuchTokenException("Unterminated char literal");
+                throw new IllegalTokenException(row, column,
+                                                "Invalid char literal");
             }
         }
         catch (IndexOutOfBoundsException e){
-            throw new NoSuchTokenException("Unterminated char literal");
+            throw new IllegalTokenException(row, column,
+                                            "Unterminated char literal");
         }
         
         column += 1; 

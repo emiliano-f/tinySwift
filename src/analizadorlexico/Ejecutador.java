@@ -16,7 +16,8 @@ public class Ejecutador {
      * Valid input: java -jar etapa1.jar ARCHIVO_FUENTE [ARCHIVO_SALIDA]
      */
     public static void main(String[] args) {
-        System.out.println(Arrays.toString(args));
+        //System.out.println(String.valueOf((int) '¨'));
+        //System.out.println(Arrays.toString(args));
         try{
             AnalizadorLexico lexical = new AnalizadorLexico(args);
             showTokens(lexical);
@@ -32,27 +33,28 @@ public class Ejecutador {
      */
     private static void showTokens(AnalizadorLexico lexical){
         
-        System.out.printf("CORRECTO: ANALISIS LEXICO\n");
-        System.out.printf("| %-10s | %-10s | %15s |\n", "TOKEN", "LEXEMA", "NUMERO DE LINEA");
+        String toPrint = String.format("CORRECTO: ANALISIS LEXICO\n| %-10s | "
+                                       + "%-10s | %-15s |\n", "TOKEN", "LEXEMA",
+                                       "NUMERO DE LINEA");
         Token token;
         
         try {
             // Print tokens
-            while (true){
+            do{
                 token = lexical.nextToken();
-                System.out.printf("| %-10s | %-10s | %d |\n", token.getToken(),
-                                                            token.getLexeme(),
-                                                            token.getLine());
-            }
+                if (token != null){
+                toPrint += String.format("| %-10s | %-10s | %-15d |\n", token.getToken(),
+                                                                        token.getLexeme(),
+                                                                        token.getLine());
+                }
+            }while (token != null);
+            System.out.println(toPrint);
         }
         catch (IllegalTokenException e) { // Invalid token
             System.err.printf("ERROR: LEXICO\n");
             System.err.printf("| %d | %d | %s |\n", e.getLine(),
                                                     e.getColumn(),
                                                     e.getMessage());
-        }
-        catch (NoSuchTokenException e){
-            // End
         }
     }
 }
