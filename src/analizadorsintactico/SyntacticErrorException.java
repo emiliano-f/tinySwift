@@ -25,6 +25,10 @@ public class SyntacticErrorException extends Exception {
         this.column = column;
     }
     
+    public SyntacticErrorException(String description){
+        super(description);
+    }
+    
     public int getLine(){
         return row;
     }
