@@ -23,7 +23,7 @@ public class Ejecutador {
         //System.out.println(Arrays.toString(args));
         try{
             AnalizadorLexico lexical = new AnalizadorLexico(args);
-            SyntacticAnalyzer syntactic = new SyntacticAnalyzer(lexical);
+            AnalizadorSintactico syntactic = new AnalizadorSintactico(lexical);
             if (syntactic.program()){
                 System.out.println("CORRECTO: ANALISIS SINTACTICO");
             }
@@ -32,10 +32,19 @@ public class Ejecutador {
             }
         }
         catch (SyntacticErrorException e){
-            System.out.println("Columna Row  " + e.getColumn() + "  " + e.getLine());
-            e.printStackTrace();   
+            System.err.printf("ERROR: SINTACTICO\n");
+            System.err.printf("| %d | %d | %s |\n", e.getLine(),
+                                                    e.getColumn(),
+                                                    e.getMessage());
+        }
+        catch (IllegalTokenException e){
+            System.err.printf("ERROR: LEXICO\n");
+            System.err.printf("| %d | %d | %s |\n", e.getLine(),
+                                                    e.getColumn(),
+                                                    e.getMessage());
         }
         catch (Exception e){
+            System.out.println(e.getClass());
             e.printStackTrace();
         }
     }
