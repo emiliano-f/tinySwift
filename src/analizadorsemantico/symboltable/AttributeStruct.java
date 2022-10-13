@@ -1,6 +1,6 @@
 package analizadorsemantico.symboltable;
 
-import org.json.JSONObject;
+import parser.json.JSONObject;
 
 /**
  *
@@ -51,8 +51,8 @@ public class AttributeStruct extends Struct{
         
         attribute.put("nombre", this.getId());
         attribute.put("tipo", this.getType().toStringIfArray());
-        attribute.put("public", Boolean.valueOf(this.isPrivate()));
-        attribute.put("posicion", Integer.valueOf(this.getPosition()));
+        attribute.put("private", this.isPrivate());
+        attribute.put("posicion", this.getPosition());
         
         return attribute;
     }

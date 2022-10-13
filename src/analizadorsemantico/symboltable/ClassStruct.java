@@ -2,8 +2,8 @@ package analizadorsemantico.symboltable;
 
 import java.util.HashMap;
 import java.util.Collection;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import parser.json.JSONArray;
+import parser.json.JSONObject;
 
 /**
  * ClassStruct definition for SymbolTable in TinySwift+
@@ -163,5 +163,55 @@ public class ClassStruct extends Struct {
         theClass.put("posicion", this.getPosition());
         
         return theClass;
+    }
+    
+    // Get methods (for AST)
+    
+    /**
+     * Returns type of method
+     * 
+     * @param method the name of method
+     * @return the type of method
+     */
+    public Type getMethodType(String method){
+        return methods.get(method).getType();
+    }
+    
+    public Type getTypeVar(String method,
+                           String id){
+        
+        Type type = methods.get(method).getTypeVar(id);
+        if (type == null){
+            AttributeStruct att = attributes.get(id);
+            if (att != null){
+                type = att.getType();
+            }
+        }
+        
+        return type;
+    }
+    
+    public Type getTypeAtt(String id){
+        
+        Type type = null;
+        AttributeStruct att = attributes.get(id);
+        if (att != null){
+            type = att.getType();
+        }
+        return type;
+    }
+    
+    /**
+     * Gets list of parameters on method
+     * 
+     * @param methodName the name of method to return parameters
+     * @return the variables Collection
+     */
+    public Collection<LocalStruct> getParameters(String methodName){
+        return methods.get(methodName).getParameters();
+    }
+    
+    public MethodStruct getMethod(String name){
+        return methods.get(name);
     }
 }

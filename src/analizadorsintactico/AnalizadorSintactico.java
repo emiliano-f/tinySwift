@@ -8,6 +8,30 @@ import analizadorsemantico.symboltable.SymbolTable;
 import analizadorsemantico.symboltable.Type;
 import analizadorsemantico.IncompleteSymbolTableException;
 import analizadorsemantico.SemanticDeclarationException;
+import analizadorsemantico.SemanticSentenceException;
+import analizadorsemantico.abstractsyntaxtree.AbstractSyntaxTree;
+import analizadorsemantico.abstractsyntaxtree.expressions.ArrayExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.BinaryExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.CallExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.ChainingExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.ExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.IdExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.LiteralNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.NewExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.OperatorNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.SelfExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.StaticCallExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.expressions.UnaryExpressionNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.ArrayNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.AssignmentNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.ChainingNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.IfNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.ReturnNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.SelfNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.SentencesNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.VarNode;
+import analizadorsemantico.abstractsyntaxtree.sentences.WhileNode;
+import java.util.ArrayList;
 
 import java.util.Arrays;
 
@@ -28,6 +52,7 @@ public class AnalizadorSintactico {
     
     // Semantic Analyzer
     private final SymbolTable symbolTable;
+    private final AbstractSyntaxTree ast;
     
     public AnalizadorSintactico(AnalizadorLexico lexical)
         throws IllegalTokenException,
@@ -35,6 +60,7 @@ public class AnalizadorSintactico {
                SemanticDeclarationException {
         
         symbolTable = new SymbolTable();
+        ast = new AbstractSyntaxTree();
         this.lexical = lexical;
         currentToken = lexical.nextToken();
         nextToken = lexical.nextToken();
@@ -58,6 +84,21 @@ public class AnalizadorSintactico {
         }
         
         return symbolTable;
+    }
+    
+    /**
+     * Gets AST when reading from the file is complete
+     * 
+     * @return the AST
+     */
+    public AbstractSyntaxTree getAST()
+        throws IncompleteSymbolTableException {
+        
+        if (!getEOF()){
+            throw new IncompleteSymbolTableException("Unexpected error: not end of file");
+        }
+        
+        return ast;
     }
     
     /**
@@ -183,12 +224,6 @@ public class AnalizadorSintactico {
         return null;
     }
     
-    private void matcherNextToken(String name)
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-    }
-    
     /**
      * Update token
      * 
@@ -276,7 +311,8 @@ public class AnalizadorSintactico {
     public boolean program()
         throws SyntacticErrorException,
                IllegalTokenException,
-               SemanticDeclarationException{
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         if (inSet("class")){
             if (inFutureSet("idclass")){
@@ -304,7 +340,8 @@ public class AnalizadorSintactico {
     private void clase_()
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         if (inSet("class")){
             if (inFutureSet("idclass")){
@@ -333,7 +370,8 @@ public class AnalizadorSintactico {
     private void claseMain()
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         try{
         
@@ -345,21 +383,27 @@ public class AnalizadorSintactico {
             type = herencia();
         }
         
+        // New class in symbol table
         symbolTable.newClass(id.getLexeme(), 
                              type,
                              id.getLine(),
                              id.getColumn());
+        // New class in AST
+        ast.newClass(id.getLexeme());
         
         matcher("lbrace");
         miembro_(true);
         type = new Type(matcher("void"));
         id = matcherWithLexeme("id","main");
         
+        // New method in symbol table
         symbolTable.newMethod(id.getLexeme(), 
                               type, 
                               true,
                               id.getLine(),
                               id.getColumn());
+        // New method in AST
+        ast.newMethod("main");
         
         matcher("lparent");
         matcher("rparent");
@@ -385,31 +429,11 @@ public class AnalizadorSintactico {
         }
     }
     
-    /*
-    private void claseMain()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        matcher("class");
-        matcher("idclass");
-        if (inSet("colon")){
-            herencia();
-        }
-        matcher("lbrace");
-        miembro_();
-        matcher("void");
-        matcherWithLexeme("id","main");
-        matcher("lparent");
-        matcher("rparent");
-        bloqueMetodo();
-        miembro_();
-        matcher("rbrace");
-    }*/
-    
     private void clase()
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         try{
             matcher("class");
@@ -419,11 +443,13 @@ public class AnalizadorSintactico {
                 type = herencia();
             }
             
-            // New class
+            // New class in symbol table
             symbolTable.newClass(id.getLexeme(), 
                                  type,
                                  id.getLine(),
                                  id.getColumn());
+            // New class in AST
+            ast.newClass(id.getLexeme());
             
             matcher("lbrace");
             miembro_(false);
@@ -445,14 +471,12 @@ public class AnalizadorSintactico {
             matcher("colon");
             return tipo();
         }
+        else if (inSet("lbrace")){
+            ;
+        }
         else{
-            if (inSet("lbrace")){
-                ;
-            }
-            else{
-                throwException("Expected colon or lbrace"
+            throwException("Expected colon or lbrace"
                                 + "but found " + currentToken.getToken());
-            }
         }
         return null;
     }
@@ -461,122 +485,56 @@ public class AnalizadorSintactico {
     private void miembro_(boolean inClassMain)
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         if (inSet("private","var","init","static","func")){
             miembro(inClassMain);
             miembro_(inClassMain);
         }
-        else{
-            if (inSet("rbrace")){
-                ;
-            }
-            /*
-            else{
-                throwException("Method definition and rbrace not found");
-            }*/
+        else if (inSet("rbrace")){
+            ;
         }
     }
-    
-    /*
-    private void miembro_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("private","var","init")){
-            miembro();
-            miembro_();
-        }
-        else{
-            if (inSet("static")){
-                matcher("static");
-                matcher("func");
-                if (inSet("void") && 
-                    inFutureSet("id") &&
-                    inFutureLexemeSet("main")){
-                        return;
-                }
-                metodo();
-                miembro_();
-            }
-            else{
-                if (inSet("func")){
-                    matcher("func");
-                    metodo();
-                    miembro_();
-                }
-                else{
-                    if (inSet("rbrace")){
-                        ;
-                    }
-                    else{
-                        throwException("Members definition and rbrace not found");
-                    }
-                }
-            }
-        }
-    }*/
     
     private void miembro(boolean inClassMain)
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         if (inSet("private","var")){
             atributo();
         }
-        else{
-            if (inSet("init")){
-                constructor();
-            }
-            else{
-                if (inSet("func", "static")){
-                    metodo(inClassMain);
-                }
-                else{
-                    if (inSet("rbrace")){
-                        ;
-                    }
-                }
-            }
+        else if (inSet("init")){
+            constructor();
+        }
+        else if (inSet("func", "static")){
+            metodo(inClassMain);
+        }
+        else if (inSet("rbrace")){
+            ;
         }
     }
-    
-    /*
-    private void miembro()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("private","var")){
-            atributo();
-        }
-        else{
-            if (inSet("init")){
-                constructor();
-            }
-            else{
-                if (inSet("rbrace")){
-                    ;
-                }
-            }
-        }
-    }*/
     
     private void constructor()
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         try{
             Token id = matcher("init");
             Type type = new Type(symbolTable.getNameCurrentClass());
             
-            // New constructor
+            // New constructor in symbol table
             symbolTable.newMethod(id.getLexeme(), 
                                   type, 
                                   false,
                                   id.getLine(),
                                   id.getColumn());
+            // New constructor in AST
+            ast.newMethod(id.getLexeme());
             
             argumentosFormales();
             bloqueMetodo(type);
@@ -609,7 +567,8 @@ public class AnalizadorSintactico {
     private void metodo(boolean inClassMain)
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         try{
         if (inClassMain){
@@ -625,12 +584,14 @@ public class AnalizadorSintactico {
                     Type type = tipoMetodo();
                     Token id = matcher("id");
                     
-                    // New method entry
+                    // New method entry in symbol table
                     symbolTable.newMethod(id.getLexeme(), 
                                           type, 
                                           true,
                                           id.getLine(), 
                                           id.getColumn());
+                    // New method in AST
+                    ast.newMethod(id.getLexeme());
                     
                     argumentosFormales();
                     bloqueMetodo(type);
@@ -647,13 +608,15 @@ public class AnalizadorSintactico {
         Type type = tipoMetodo();
         Token id = matcher("id");
         
-        // New method entry
+        // New method entry in symbol table
         symbolTable.newMethod(id.getLexeme(), 
                               type, 
                               isStatic,
                               id.getLine(), 
                               id.getColumn());
-        
+        // New method in AST
+        ast.newMethod(id.getLexeme());
+                    
         argumentosFormales();
         bloqueMetodo(type);
         
@@ -665,17 +628,6 @@ public class AnalizadorSintactico {
             throwException("method: " + e.getMessage());
         }
     }
-    
-    /*
-    private void metodo()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        tipoMetodo();
-        matcher("id");
-        argumentosFormales();
-        bloqueMetodo();        
-    }*/
     
     /**
      * 
@@ -693,12 +645,6 @@ public class AnalizadorSintactico {
         }
         
         return false;
-        /*
-        else{
-            if (inSet("var")){
-                ;
-            }
-        }*/
     }
     
     /**
@@ -717,22 +663,17 @@ public class AnalizadorSintactico {
         }
         
         return false;
-        /*
-        else{
-            if (inSet("func")){
-                ;
-            }
-        }*/
     }
     
     private void bloqueMetodo(Type type)
         throws IllegalTokenException,
                SyntacticErrorException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         matcher("lbrace");
         declVarLocales_();
-        sentencia_(type);
+        sentencia_(ast.getSentencesList());
         matcher("rbrace");
         
     }
@@ -890,7 +831,7 @@ public class AnalizadorSintactico {
         if (inSet("rparent")){
             return;
         }
-        matcher(",");
+        matcher("comma");
         listaArgumentosFormales();
     }
     
@@ -927,19 +868,16 @@ public class AnalizadorSintactico {
         if (inSet("array")){
             return tipoArray();
         }
-        else{
-            if (inSet("idclass")){
-                return tipoReferencia();
-            }
-            else{
-                if (inSet("bool","int","string","char")){
-                    return tipoPrimitivo();
-                }
-                else{
-                    throwException("Invalid type declaration");
-                }
-            }
+        else if (inSet("idclass")){
+            return tipoReferencia();
         }
+        else if (inSet("bool","int","string","char")){
+            return tipoPrimitivo();
+        }
+        else{
+            throwException("Invalid type declaration");
+        }
+        
         return null;
     }
     
@@ -969,128 +907,150 @@ public class AnalizadorSintactico {
         return type;
     }
     
-    private void sentencia_(Type type)
+    private void sentencia_(SentencesNode currentScope)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         if (inSet("rbrace")){
             return;
         }
-        sentencia(type);
-        sentencia_(type);
+        sentencia(currentScope);
+        sentencia_(currentScope);
     }
-    private void sentencia(Type type)
+    private void sentencia(SentencesNode currentScope)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         if (inSet("semicolon")){
             matcher("semicolon");
         }
-        else{
-            if (inSet("id","self")){
-                asignacion();
-                matcher("semicolon");
-            }
-            else{
-                if (inSet("lparent")){
-                    sentenciaSimple();
-                    matcher("semicolon");
-                }
-                else{
-                    if (inSet("if")){
-                        matcher("if");
-                        matcher("lparent");
-                        expresion();
-                        matcher("rparent");
-                        sentencia(type);
-                        sentenciaF(type);
-                    }
-                    else{
-                        if (inSet("while")){
-                            matcher("while");
-                            matcher("lparent");
-                            expresion();
-                            matcher("rparent");
-                            sentencia(type);
-                        }
-                        else{
-                            if (inSet("return")){
-                                matcher("return");
-                                returnNoTerminal(type);
-                                matcher("semicolon");
-                            }
-                            else{
-                                if (inSet("lbrace")){
-                                    bloque(type);
-                                }
-                                else{
-                                    throwException("Invalid sentence: " + 
-                                                    currentToken.getToken() +
-                                                    " found");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    private void sentenciaF(Type type)
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        /*
-        if (inSet("semicolon","id","self", "lparent",
-                    "if", "while", "lbrace", "return", "rbrace")){ 
-            return;
-        }
-
-        matcher("else");
-        sentencia(); */
         
-        if (inSet("else")){
-            matcher("else");
-            sentencia(type);
+        else if (inSet("id","self")){
+            
+            // Add AssignmentNode to current list of sentences
+            currentScope.addSentence(asignacion());
+            matcher("semicolon");
         }
-    }
-    private void returnNoTerminal(Type type)
-        throws IllegalTokenException,
-               SyntacticErrorException {
         
-        if (inSet("semicolon")){
-            return;
+        else if (inSet("lparent")){
+            currentScope.addSentence(sentenciaSimple());
+            matcher("semicolon");
         }
-        expresion(); //podría poner un inSet(primeros(Return))
+        
+        else if (inSet("if")){
+            
+            matcher("if");
+            matcher("lparent");
+            ExpressionNode exp = expresion();
+            matcher("rparent");
+            
+            // List of sentences on if
+            SentencesNode ifSentences = new SentencesNode();
+            sentencia(ifSentences);
+            
+            // List of sentences on else
+            SentencesNode elseSentences = new SentencesNode();
+            sentenciaF(elseSentences);
+            
+            // Add IfNode to current list of sentences
+            currentScope.addSentence(new IfNode(exp,
+                                                ifSentences, 
+                                                elseSentences));
+        }
+        
+        else if (inSet("while")){
+            
+            matcher("while");
+            matcher("lparent");
+            ExpressionNode exp = expresion();
+            matcher("rparent");
+            
+            // List of sentences
+            SentencesNode whileSentences = new SentencesNode();
+            sentencia(whileSentences);
+            
+            // Add WhileNode to current list of sentences
+            currentScope.addSentence(new WhileNode(exp, 
+                                                   whileSentences));
+        }
+        
+        else if (inSet("return")){
+            matcher("return");
+            currentScope.addSentence(returnNoTerminal());
+            matcher("semicolon");
+        }
+        
+        else if (inSet("lbrace")){
+            bloque(currentScope);
+        }
+        
+        else {
+            throwException("Invalid sentence: " + 
+                           currentToken.getToken() +
+                           " found");
+        }
     }
     
-    private void bloque(Type type)
+    private void sentenciaF(SentencesNode currentScope)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+
+        if (inSet("else")){
+            matcher("else");
+            sentencia(currentScope);
+        }
+    }
+    private ReturnNode returnNoTerminal()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        if (inSet("semicolon")){
+            return null;
+        }
+        
+        ExpressionNode exp = expresion();
+        return new ReturnNode(exp, exp.getLine());
+    }
+    
+    private void bloque(SentencesNode currentScope)
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         matcher("lbrace");
-        sentencia_(type);
+        sentencia_(currentScope);
         matcher("rbrace");
     }
     
-    private void asignacion()
+    private AssignmentNode asignacion()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        AssignmentNode node = null;
         
         try{
             if (inSet("id")){
-                accesoVarSimple();
+                ChainingNode chain = accesoVarSimple();
                 matcher("assign");
-                expresion();
+                ExpressionNode expNode = expresion();
+                node = new AssignmentNode(chain, expNode);
             }
+            
+            else if (inSet("self")){
+                ChainingNode chain = accesoSelfSimple();
+                matcher("assign");
+                ExpressionNode expNode = expresion();
+                node = new AssignmentNode(chain, expNode);
+            }
+            
             else{
-                if (inSet("self")){
-                    accesoSelfSimple();
-                    matcher("assign");
-                    expresion();
-                }
-                else{
-                    throwException("An assignment was expected but found " +
-                                    currentToken.getToken());
-                }
+                throwException("An assignment was expected but found " +
+                               currentToken.getToken());
             }
         }
         catch (SyntacticErrorException e){
@@ -1101,603 +1061,762 @@ public class AnalizadorSintactico {
             }
             throwExceptionMatcher("EOF");
         }
-    }
-    
-    private void accesoVarSimple()
-        throws IllegalTokenException,
-               SyntacticErrorException {
         
-        matcher("id");
-        accesoVarSimpleF();
+        return node;
     }
     
-    private void accesoVarSimpleF()
+    private ChainingNode accesoVarSimple()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        Token token = matcher("id");
+        // Send lexeme and row of id (accesoVarSimpleF creates the Node)
+        return accesoVarSimpleF(token.getLexeme(), token.getLine());
+    }
+    
+    private ChainingNode accesoVarSimpleF(String id, int line)
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingNode chain = null;
         
         if (inSet("lbracket")){
             matcher("lbracket");
-            expresion();
+            ExpressionNode expNode = expresion();
             matcher("rbracket");
+            
+            // New node for AST
+            chain = new ChainingNode(new ArrayNode(id,
+                                                   expNode,
+                                                   line));
         }
-        else{
-            if (inSet("dot")){
-                encadenadoSimple_();
-            }
-        }
-    }
-    
-    private void accesoSelfSimple()
-        throws IllegalTokenException,
-               SyntacticErrorException {
         
-        matcher("self");
-        encadenadoSimple_();
+        else if (inSet("dot", "assign")){
+                ChainingNode post = encadenadoSimple_();
+                chain = new ChainingNode(new VarNode(id,
+                                                     line),
+                                         post);
+        }
+        
+        return chain;
     }
     
-    private void encadenadoSimple_()
+    private ChainingNode accesoSelfSimple()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        Token token = matcher("self");
+        ChainingNode chain = encadenadoSimple_();
+        
+        // Saves the name of current class for self reference
+        return new ChainingNode(new SelfNode(symbolTable.getNameCurrentClass(),
+                                             new Type(symbolTable.getNameCurrentClass()),
+                                             token.getLine()),
+                                chain);
+    }
+    
+    private ChainingNode encadenadoSimple_()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         if (inSet("assign")){
-            return;
+            return null;
         }
-        encadenadoSimple();
-        encadenadoSimple_();
+        
+        Token token = encadenadoSimple();
+        ChainingNode chain = encadenadoSimple_();
+        
+        return new ChainingNode(new VarNode(token.getLexeme(),
+                                            token.getLine()),
+                                chain);
     }
     
-    private void encadenadoSimple()
+    private Token encadenadoSimple()
         throws IllegalTokenException,
                SyntacticErrorException {
         
         matcher("dot");
-        matcher("id");
+        return matcher("id");
     }
     
-    private void sentenciaSimple()
+    private ExpressionNode sentenciaSimple()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         matcher("lparent");
-        expresion();
+        ExpressionNode exp = expresion();
         matcher("rparent");
+        return exp;
     }
     
-    private void expresion()
+    private ExpressionNode expresion()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
-        expOr();
+        return expOr();
     }
     
-    private void expOr()
+    private ExpressionNode expOr()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
-        expAnd();
-        expOr_();
-    }
-    
-    /*
-    private void expOr_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
+        ExpressionNode exp = expAnd();
+        ExpressionNode right = expOr_();
         
-        if (inSet("semicolon","rparent","rbracket")){
-            return;
+        if (right != null){
+            exp = new BinaryExpressionNode(exp, 
+                                           right, 
+                                           new OperatorNode("||", exp.getLine()));
         }
-        else{
-            if (inSet("or")){
-                matcher("or");
-                expAnd();
-                expOr_();
-            }
-            else{
-                throwException("decris");
-            }
-        }
-    }*/
+        
+        return exp;
+    }
     
-    private void expOr_()
+    private ExpressionNode expOr_()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = null;
         
         if (inSet("or")){
             matcher("or");
-            expAnd();
-            expOr_();
-        }
-    }
-    
-    private void expAnd()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        expIgual();
-        expAnd_();
-    }
-    
-    /*
-    private void expAnd_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("or","semicolon","rparent","rbracket")){
-            return;
-        }
-        else{
-            if (inSet("and")){
-                matcher("and");
-                expIgual();
-                expAnd_();
+            exp = expAnd();
+            ExpressionNode right = expOr_();
+            
+            if (right != null){
+                exp = new BinaryExpressionNode(exp, 
+                                               right, 
+                                               new OperatorNode("||",exp.getLine()));
             }
         }
-    }*/
+        
+        return exp;
+    }
     
-    private void expAnd_()
+    private ExpressionNode expAnd()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = expIgual();
+        ExpressionNode right = expAnd_();
+        
+        if (right != null){
+            exp = new BinaryExpressionNode(exp,
+                                           right,
+                                           new OperatorNode("&&", exp.getLine()));
+        }
+        
+        return exp;
+    }
+    
+    private ExpressionNode expAnd_()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = null;
         
         if (inSet("and")){
             matcher("and");
-            expIgual();
-            expAnd_();
-        }
-    }
-    
-    private void expIgual()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        expCompuesta();
-        expIgual_();
-    }
-    
-    /*
-    private void expIgual_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("and","or","semicolon","rparent","rbracket")){
-            return;
-        }
-        else{
-            if (inSet("equal","noteq")){
-                opIgual();
-                expCompuesta();
-                expIgual_();
+            exp = expIgual();
+            ExpressionNode right = expAnd_();
+            
+            if (right != null){
+                exp = new BinaryExpressionNode(exp,
+                                               right, 
+                                               new OperatorNode("&&",exp.getLine()));
             }
         }
-    }*/
+        
+        return exp;
+    }
     
-    private void expIgual_()
+    private ExpressionNode expIgual()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = expCompuesta();
+        BinaryExpressionNode node = expIgual_();
+        
+        if (node != null){
+            node.setLeftOp(exp);
+            exp = node;
+        }
+        
+        return exp;
+    }
+    
+    private BinaryExpressionNode expIgual_()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        BinaryExpressionNode exp = null;
         
         if (inSet("equal","noteq")){
-            opIgual();
-            expCompuesta();
-            expIgual_();
-        }
-    }
-    
-    private void expCompuesta()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        expAd();
-        expCompuestaF();
-    }
-    
-    /*
-    private void expCompuestaF()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("equal","noteq","and","or","semicolon","rparent","rbracket")){
-            return;
-        }
-        else{
-            if(inSet("less","greater","leq","geq")){
-                opCompuesto();
-                expAd();
+            OperatorNode op = opIgual();
+            ExpressionNode temp = expCompuesta();
+            BinaryExpressionNode node = expIgual_();
+            
+            exp = new BinaryExpressionNode(op);
+
+            if (node != null){
+                node.setLeftOp(temp);
+                exp.setRightOp(node);
+            }
+            else {
+                exp.setRightOp(temp);
             }
         }
-    }*/
+        
+        return exp;
+    }
     
-    private void expCompuestaF()
+    private ExpressionNode expCompuesta()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = expAd();
+        BinaryExpressionNode node = expCompuestaF();
+        
+        if (node != null){
+            node.setLeftOp(exp);
+            exp = node;
+        }
+        
+        return exp;
+    }
+    
+    private BinaryExpressionNode expCompuestaF()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        BinaryExpressionNode exp = null;
         
         if(inSet("less","greater","leq","geq")){
-            opCompuesto();
-            expAd();
+            OperatorNode op = opCompuesto();
+            ExpressionNode temp = expAd();
+            exp = new BinaryExpressionNode(op);
+            exp.setRightOp(temp);
         }
+        
+        return exp;
     }
     
-    private void expAd()
+    private ExpressionNode expAd()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
-        expMul();
-        expAd_();
+        ExpressionNode exp = null;
+        
+        exp = expMul();
+        BinaryExpressionNode node = expAd_();
+        
+        if (node != null){
+            node.setLeftOp(exp);
+            exp = node;
+        }
+        
+        return exp;
     }
     
-    /*
-    private void expAd_()
+    private BinaryExpressionNode expAd_()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
-        if (inSet("less","greater","leq","geq","equal",
-                    "noteq","and","or","semicolon","rparent","rbracket")){
-            return;
-        }
-        else{
-            if (inSet("plus","minus")){
-                opAd();
-                expMul();
-                expAd_();
-            }
-        }
-    }*/
-    
-    private void expAd_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
+        BinaryExpressionNode exp = null;
         
         if (inSet("plus","minus")){
-            opAd();
-            expMul();
-            expAd_();
-        }
-    }
-    
-    private void expMul()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        expUn();
-        expMul_();
-    }
-    
-    /*
-    private void expMul_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
-        
-        if (inSet("less","greater","leq","geq","equal","noteq",
-                    "and","or","semicolon","rparent","rbracket","plus","minus")){
-            return;
-        }
-        else{
-            if (inSet("ast","div","mod")){
-                opMul();
-                expUn();
-                expMul_();
+            OperatorNode op = opAd();
+            ExpressionNode temp = expMul();
+            BinaryExpressionNode node = expAd_();
+            
+            exp = new BinaryExpressionNode(op);
+
+            if (node != null){
+                node.setLeftOp(temp);
+                exp.setRightOp(node);
+            }
+            else {
+                exp.setRightOp(temp);
             }
         }
-    }*/
-    
-    private void expMul_()
-        throws IllegalTokenException,
-               SyntacticErrorException {
         
-        if (inSet("ast","div","mod")){
-            opMul();
-            expUn();
-            expMul_();
-        }
+        return exp;
     }
     
-    private void expUn()
+    private ExpressionNode expMul()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = null;
+        
+        exp = expUn();
+        BinaryExpressionNode node = expMul_();
+        
+        if (node != null){
+            node.setLeftOp(exp);
+            exp = node;
+        }
+        
+        return exp;
+    }
+    
+    private BinaryExpressionNode expMul_()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        BinaryExpressionNode exp = null;
+        
+        if (inSet("ast","div","mod")){
+            OperatorNode op = opMul();
+            ExpressionNode temp = expUn();
+            BinaryExpressionNode node = expMul_();
+            
+            exp = new BinaryExpressionNode(op);
+
+            if (node != null){
+                node.setLeftOp(temp);
+                exp.setRightOp(node);
+            }
+            else {
+                exp.setRightOp(temp);
+            }
+        }
+        
+        return exp;
+    }
+    
+    private ExpressionNode expUn()
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = null;
         
         if (inSet("plus","minus","not")){
-            opUnario();
-            expUn();
+            OperatorNode op = opUnario();
+            ExpressionNode operand = expUn();
+            exp = new UnaryExpressionNode(op, operand);
         }
         else{
             if (inSet("nil","true","false","intlit","stringlit","charlit",
                         "lparent","self","id","idclass","new")){
-                operando();
+                exp = operando();
             }
             else{
                 throwException("Unindentified expresion");
             }
         }
+        
+        return exp;
     }
     
-    private void opIgual()
+    private OperatorNode opIgual()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("equal","noteq");
+        Token token = matcherSomeTerminal("equal","noteq");
+        return new OperatorNode(token.getLexeme(), token.getLine());
     }
     
-    private void opCompuesto()
+    private OperatorNode opCompuesto()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("less","greater","leq","geq");
+        Token token = matcherSomeTerminal("less","greater","leq","geq");
+        return new OperatorNode(token.getLexeme(), token.getLine());
     }
     
-    private void opAd()
+    private OperatorNode opAd()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("plus","minus");
+        Token token = matcherSomeTerminal("plus","minus");
+        return new OperatorNode(token.getLexeme(), token.getLine());
     }
     
-    private void opUnario()
+    private OperatorNode opUnario()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("plus","minus","not");
+        Token token = matcherSomeTerminal("plus","minus","not");
+        return new OperatorNode(token.getLexeme(), token.getLine());
     }
     
-    private void opMul()
+    private OperatorNode opMul()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("ast","div","mod");
+        Token token = matcherSomeTerminal("ast","div","mod");
+        return new OperatorNode(token.getLexeme(), token.getLine());
     }
     
-    private void operando()
+    private ExpressionNode operando()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ExpressionNode exp = null;
         
         if (inSet("nil","true","false","intlit","stringlit","charlit")){
-            literal();
+            exp = literal();
         }
+        
+        else if (inSet("lparent","self","id","idclass","new")){
+            
+            /*
+             * Grammar modification (see report etapa4)
+             * 
+            ExpressionNode primary = primario();
+            ChainingExpressionNode chain = encadenado();
+            exp = new ChainingExpressionNode(primary, chain); */
+            
+            exp = primario();
+        }
+        
         else{
-            if (inSet("lparent","self","id","idclass","new")){
-                primario();
-                encadenado();
-            }
-            else{
-                throwException("Unindentified operator");
-            }
+            throwException("Unindentified operator");
         }
+        
+        return exp;
     }
     
-    private void literal()
+    private LiteralNode literal()
         throws IllegalTokenException,
                SyntacticErrorException {
         
-        matcherSomeTerminal("nil","true","false","intlit","stringlit","charlit");
+        Token token = matcherSomeTerminal("nil","true","false","intlit",
+                                                        "stringlit","charlit");
+        return new LiteralNode(token.getLexeme(),
+                               Type.obtainLiteralType(token.getToken()),
+                               token.getLine());
     }
     
-    private void primario()
+    private ChainingExpressionNode primario()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode exp = null;
         
         if (inSet("lparent")){
-            expresionParentizada();
+            exp = expresionParentizada();
         }
-        else{
-            if (inSet("self")){
-                accesoSelf();
-            }
-            else{
-                if (inSet("new")){
-                    llamadaConstructor();
-                }
-                else{
-                    if (inSet("id")){
-                        matcher("id");
-                        primarioId();
-                    }
-                    else{
-                        if (inSet("idclass")){
-                            llamadaMetodoEstatico();
-                        }
-                    }
-                }
-            }
+        
+        else if (inSet("self")){
+            exp = accesoSelf();
         }
+        
+        else if (inSet("new")){
+            exp = llamadaConstructor();
+        }
+        
+        else if (inSet("id")){
+            Token token = matcher("id");
+            exp = primarioId(token.getLexeme(), token.getLine());
+        }
+        else if (inSet("idclass")){
+            exp = llamadaMetodoEstatico();
+        }
+        
+        return exp;
     }
     
-    private void expresionParentizada()
+    private ChainingExpressionNode expresionParentizada()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         matcher("lparent");
-        expresion();
+        ExpressionNode expression = expresion();
         matcher("rparent");
-        encadenado();
-    }
-    
-    private void accesoSelf()
-        throws IllegalTokenException,
-               SyntacticErrorException {
+        ChainingExpressionNode chain = encadenado();
         
-        matcher("self");
-        encadenado();
+        return new ChainingExpressionNode(expression,
+                                          chain);
     }
     
-    private void primarioId()
+    private ChainingExpressionNode accesoSelf()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        int line = matcher("self").getLine();
+        ChainingExpressionNode chain = encadenado();
+        
+        return new ChainingExpressionNode(
+                    new SelfExpressionNode(symbolTable.getNameCurrentClass(),
+                                           line),
+                    chain);
+    }
+    
+    private ChainingExpressionNode primarioId(String id, int line)
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode chain = null;
         
         if (inSet("lparent")){
-            llamadaMetodo();
+            chain = llamadaMetodo(id, line);
+        }
+        else if (inSet("dot", "lbracket")){
+            chain = accesoVar(id, line);
         }
         else{
-            if (inSet("dot", "lbracket")){
-                accesoVar();
-            }
-            //else{ //colocar secundarios para reportar correctamente error
+            chain = new ChainingExpressionNode(new IdExpressionNode(id, line));
         }
+
+        return chain;
     }
     
-    private void accesoVar()
+    private ChainingExpressionNode accesoVar(String id, int line)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode chain = null;
         
         if (inSet("dot")){
-            encadenado();
+            ChainingExpressionNode postChain = encadenado();
+            chain = new ChainingExpressionNode(
+                        new IdExpressionNode(id, line),
+                        postChain);
         }
-        else{
-            if (inSet("lbracket")){
-                matcher("lbracket");
-                expresion();
-                matcher("rbracket");
-            }
+        
+        else if (inSet("lbracket")){
+            matcher("lbracket");
+            ExpressionNode exp = expresion();
+            matcher("rbracket");
+            chain = new ChainingExpressionNode(
+                        new ArrayExpressionNode(id, exp, line));
         }
+        
+        return chain;
     }
     
-    private void llamadaMetodo()
+    private ChainingExpressionNode llamadaMetodo(String id, int line)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException{
         
-        argumentosActuales();
-        encadenado();
+        ArrayList<ExpressionNode> args = argumentosActuales();
+        ChainingExpressionNode chain = encadenado();
+        
+        return new ChainingExpressionNode(
+                    new CallExpressionNode(id, args, 
+                                           symbolTable.getNameCurrentClass(),line),
+                    chain); 
     }
     
-    private void llamadaMetodoEstatico()
+    private ChainingExpressionNode llamadaMetodoEstatico()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
-        matcher("idclass");
+        Token idClass = matcher("idclass");
         matcher("dot");
-        matcher("id");
-        llamadaMetodo();
-        encadenado();
+        Token id = matcher("id");
+        ChainingExpressionNode chain = llamadaMetodo(id.getLexeme(), id.getLine());
+        encadenado(); // Ignore
+        
+        return new ChainingExpressionNode(
+                    new StaticCallExpressionNode(idClass.getLexeme(), 
+                                                 idClass.getLine()),
+                    chain);
     }
     
-    private void llamadaConstructor()
+    private ChainingExpressionNode llamadaConstructor()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         matcher("new");
-        llamadaConstructorF();
+        return llamadaConstructorF();
     }
     
-    private void llamadaConstructorF()
+    private ChainingExpressionNode llamadaConstructorF()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode newConstructor = null;
         
         if (inSet("idclass")){
-            matcher("idclass");
-            argumentosActuales();
-            encadenado();
+            Token idClass = matcher("idclass");
+            ArrayList<ExpressionNode> args = argumentosActuales();
+            ChainingExpressionNode chain = encadenado();
+            newConstructor = new ChainingExpressionNode(
+                                new NewExpressionNode(idClass.getLexeme(),
+                                                      args,
+                                                      idClass.getLine()),
+                                chain);
+        }
+        else if (inSet("bool","int","string","char")){
+            Type type = tipoPrimitivo();
+            matcher("lbracket");
+            ExpressionNode exp = expresion();
+            matcher("rbracket");
+            newConstructor = new ChainingExpressionNode(
+                                new NewExpressionNode(type.toString(),
+                                                      exp,
+                                                      exp.getLine()));
         }
         else{
-            if (inSet("bool","int","string","char")){
-                tipoPrimitivo();
-                matcher("lbracket");
-                expresion();
-                matcher("rbracket");
-            }
-            else{
-                throwException("unadescripcion");
-            }
+            throwException("Error");
         }
+        
+        return newConstructor;
     }
     
-    private void argumentosActuales()
+    private ArrayList<ExpressionNode> argumentosActuales()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         matcher("lparent");
-        argumentosActualesF();
+        return argumentosActualesF();
     }
     
-    private void argumentosActualesF()
+    private ArrayList<ExpressionNode> argumentosActualesF()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ArrayList<ExpressionNode> args = new ArrayList();
         
         if (inSet("rparent")){
             matcher("rparent");
         }
-        else{
-            if (inSet("plus","minus","not","nil","true","false","intlit",
+        else if (inSet("plus","minus","not","nil","true","false","intlit",
                         "stringlit","charlit","lparent","self","id","new")){
-                listaExpresiones();
-                matcher("rparent");
-            }
-            else{
-                throwException("unaeDesp");
-            }
+            listaExpresiones(args);
+            matcher("rparent");
         }
-    }
-    
-    private void listaExpresiones()
-        throws IllegalTokenException,
-               SyntacticErrorException {
+        else{
+            throwException("Error");
+        }
         
-        expresion();
-        listaExpresionesF();
+        return args;
     }
     
-    private void listaExpresionesF()
+    private void listaExpresiones(ArrayList<ExpressionNode> args)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        args.add(expresion());
+        listaExpresionesF(args);
+    }
+    
+    private void listaExpresionesF(ArrayList<ExpressionNode> args)
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
         
         if (inSet("comma")){
             matcher("comma");
-            listaExpresiones();
+            listaExpresiones(args);
+        }
+        else if (inSet("rparent")){
+            return;
         }
         else{
-            if (inSet("rparent")){
-                return;
-            }
-            else{
-                throwException("unerror");
-            }
+            throwException("unerror");
         }
     }
     
-    private void encadenado()
+    private ChainingExpressionNode encadenado()
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode chain = null;
         
         if (inSet("dot")){
             matcher("dot");
-            matcher("id");
-            encadenadoF();
+            Token token = matcher("id");
+            chain = encadenadoF(token.getLexeme(), token.getLine());
         }
+        
+        return chain;
     }
     
-    private void encadenadoF() //nexttoken?
+    private ChainingExpressionNode encadenadoF(String id, int line) //nexttoken?
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode chain = null;
         
         if (inSet("lparent")){
-            llamadaMetodoEncadenado();
+            chain = llamadaMetodoEncadenado(id, line);
+        }
+        else if (inSet("dot","lbracket")){
+            chain = accesoVariableEncadenado(id, line);
         }
         else{
-            if (inSet("dot","lbracket")){
-                accesoVariableEncadenado();
-            }
+            chain = new ChainingExpressionNode(new IdExpressionNode(id, line));
         }
-    }
-    
-    private void llamadaMetodoEncadenado()
-        throws IllegalTokenException,
-               SyntacticErrorException {
         
-        argumentosActuales();
-        encadenado();
+        return chain;
     }
     
-    private void accesoVariableEncadenado()
+    private ChainingExpressionNode llamadaMetodoEncadenado(String id, int line)
         throws IllegalTokenException,
-               SyntacticErrorException {
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ArrayList<ExpressionNode> args = argumentosActuales();
+        ChainingExpressionNode chain = encadenado();
+        
+        return new ChainingExpressionNode(
+                    new CallExpressionNode(id, args, 
+                                           symbolTable.getNameCurrentClass(), line),
+                    chain);
+    }
+    
+    private ChainingExpressionNode accesoVariableEncadenado(String id, int line)
+        throws IllegalTokenException,
+               SyntacticErrorException,
+               SemanticSentenceException {
+        
+        ChainingExpressionNode chain = null;
         
         if (inSet("dot")){
-            encadenado();
+            ChainingExpressionNode postChain = encadenado();
+            chain = new ChainingExpressionNode(
+                        new IdExpressionNode(id, line),
+                        postChain);
+        }
+        else if (inSet("lbracket")){
+            matcher("lbracket");
+            ExpressionNode exp = expresion();
+            matcher("rbracket");
+            chain = new ChainingExpressionNode(
+                        new ArrayExpressionNode(id, exp, line));
         }
         else{
-            if (inSet("lbracket")){
-                matcher("lbracket");
-                expresion();
-                matcher("rbracket");
-            }
-            else{
-                throwException("Imposible acceder a variable");
-            }
+            throwException("Imposible acceder a variable");
         }
+        
+        return chain;
     }
 }

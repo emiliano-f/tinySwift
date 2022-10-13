@@ -1,6 +1,6 @@
 package analizadorsemantico.symboltable;
 
-import org.json.JSONObject;
+import parser.json.JSONObject;
 
 /**
  * Struct definition for symbol table objects.

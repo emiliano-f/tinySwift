@@ -3,8 +3,8 @@ package analizadorsemantico.symboltable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Collection;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import parser.json.JSONArray;
+import parser.json.JSONObject;
 
 /**
  *
@@ -130,6 +130,15 @@ public class MethodStruct extends Struct {
         return variables.values();
     }
     
+    /**
+     * Gets list of parameters
+     * 
+     * @return the variables Collection
+     */
+    public Collection<LocalStruct> getParameters(){
+        return parameters.values();
+    }
+    
     @Override
     public JSONObject toJSON(){
         JSONObject method = new JSONObject();
@@ -138,9 +147,9 @@ public class MethodStruct extends Struct {
         
         // Fields
         method.put("nombre", this.getId());
-        method.put("static", Boolean.valueOf(this.isStatic()));
+        method.put("static", this.isStatic());
         method.put("retorno", this.getType().toStringIfArray());
-        method.put("posicion", Integer.valueOf(this.getPosition()));
+        method.put("posicion", this.getPosition());
         
         // Values in HashMap
         Collection<LocalStruct> parametersValues = this.parameters.values();
@@ -158,5 +167,33 @@ public class MethodStruct extends Struct {
         method.put("variables", variables);
         
         return method;
+    }
+    
+    // Gets for AST
+    
+    /**
+     * Returns type of parameter or local variable
+     * 
+     * @param id the identifier 
+     * @return the type of id
+     */
+    public Type getTypeVar(String id){
+        
+        Type typeVar = null;
+        
+        // Search in parameters
+        LocalStruct var = parameters.get(id);
+        if (var != null){
+            typeVar = var.getType();
+        }
+        else{
+            // Search in variables
+            var = variables.get(id);
+            if (var != null) {
+                typeVar = var.getType();
+            }
+        }
+        
+        return typeVar;
     }
 }

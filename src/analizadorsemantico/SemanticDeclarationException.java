@@ -17,8 +17,8 @@ public class SemanticDeclarationException extends Exception {
      * @param column the column number
      */
     public SemanticDeclarationException(String description,
-                                  int row,
-                                  int column){
+                                        int row,
+                                        int column){
         
         super(description);
         this.row = row;

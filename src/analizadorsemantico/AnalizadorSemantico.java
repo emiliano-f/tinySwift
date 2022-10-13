@@ -1,15 +1,16 @@
 package analizadorsemantico;
 
 import analizadorlexico.IllegalTokenException;
+import analizadorsemantico.abstractsyntaxtree.AbstractSyntaxTree;
 
 import analizadorsintactico.AnalizadorSintactico;
 import analizadorsintactico.SyntacticErrorException;
 
 import analizadorsemantico.symboltable.SymbolTable;
 
-import org.json.JSONObject;
 import java.io.FileWriter;
 import java.io.IOException;
+import parser.json.JSONObject;
 
 /**
  * Semantic Analyzer definition for tinySwift+
@@ -21,6 +22,7 @@ public class AnalizadorSemantico {
     
     private AnalizadorSintactico syntactic;
     private SymbolTable symbolTable;
+    private AbstractSyntaxTree ast;
     
     /**
      * Constructor for AnalizadorSemantico
@@ -50,11 +52,14 @@ public class AnalizadorSemantico {
         throws IllegalTokenException,
                SyntacticErrorException,
                IncompleteSymbolTableException,
-               SemanticDeclarationException {
+               SemanticDeclarationException,
+               SemanticSentenceException {
         
         if (syntactic.program()){
             symbolTable = syntactic.getSymbolTable();
+            ast = syntactic.getAST();
             symbolTable.consolidation();
+            ast.inference(symbolTable);
             persistence();
             return true;
         }
@@ -62,15 +67,42 @@ public class AnalizadorSemantico {
     }
     
     /**
-     * Saves JSON file after consolidation
+     * Returns AST
+     *  
+     * @return the ast
+     */
+    public AbstractSyntaxTree getAST(){
+        return ast;
+    }
+    
+    /**
+     * Returns Symbol Table
+     * 
+     * @return the symbol table
+     */
+    public SymbolTable getST(){
+        return symbolTable;
+    }
+    
+    /**
+     * Saves JSON file after consolidation and types inference
      */
     private void persistence(){
         JSONObject table = symbolTable.toJSON(syntactic.getNameOfFile());
+        JSONObject tree = ast.toJSON(syntactic.getNameOfFile());
         
-        try(FileWriter file = new FileWriter(System.getProperty("user.dir") + "/"
-                                             + syntactic.getNameOfFile() + ".json")) {
+        try{
+            String dir = System.getProperty("user.dir") + "/";
             
-            file.write(table.toString());
+            // Symbol table
+            FileWriter fileTS = new FileWriter(dir + syntactic.getNameOfFile() + ".ts.json");
+            fileTS.write(table.toString());
+            fileTS.close();
+            
+            // AST
+            FileWriter fileAST = new FileWriter(dir + syntactic.getNameOfFile() + ".ast.json");
+            fileAST.write(tree.toString());
+            fileAST.close();
         } 
         catch (IOException e) {
             e.printStackTrace();

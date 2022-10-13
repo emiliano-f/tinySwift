@@ -1,6 +1,6 @@
 package analizadorsemantico.symboltable;
 
-import org.json.JSONObject;
+import parser.json.JSONObject;
 
 /**
  * LocalStruct definition for SymbolTable in TinySwift+

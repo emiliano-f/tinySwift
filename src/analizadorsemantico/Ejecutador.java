@@ -2,7 +2,6 @@ package analizadorsemantico;
 
 import analizadorlexico.AnalizadorLexico;
 import analizadorlexico.IllegalTokenException;
-import analizadorlexico.Token;
 
 import analizadorsintactico.AnalizadorSintactico;
 import analizadorsintactico.SyntacticErrorException;
@@ -15,7 +14,7 @@ public class Ejecutador {
     
     /**
      * @param args the command line arguments
-     * Valid input: java -jar etapa1.jar ARCHIVO_FUENTE [ARCHIVO_SALIDA]
+     * Valid input: java -jar etapa1.jar ARCHIVO_FUENTE
      */
     public static void main(String[] args) {
         //System.out.println(String.valueOf((int) '¨'));
@@ -26,11 +25,17 @@ public class Ejecutador {
             AnalizadorSemantico semantic = new AnalizadorSemantico(syntactic);
             
             if(semantic.init()){
-                System.out.println("CORRECTO: ANALISIS SEMANTICO - DECLARACIONES");
+                System.out.println("CORRECTO: ANALISIS SEMANTICO - SENTENCIAS");
             }
             else{
                 System.out.println("FINAL INESPERADO");
             }
+        }
+        
+        catch (SemanticSentenceException e){
+            System.err.printf("ERROR: SEMANTICO - SENTENCIAS\n");
+            System.err.printf("| %d | %s |\n", e.getLine(),
+                                               e.getMessage());
         }
         
         catch (SemanticDeclarationException e){

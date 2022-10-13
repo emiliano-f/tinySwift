@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Collection;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import parser.json.JSONArray;
+import parser.json.JSONObject;
 
 import analizadorsemantico.SemanticDeclarationException;
 
@@ -102,18 +102,18 @@ public class SymbolTable {
         
         // Array
         newClass("Array", new Type("Object"), 0, 0);
-        newMethod("length", new Type("Int"), true, 0, 0);
+        newMethod("length", new Type("Int"), false, 0, 0);
         addMethodEntry();
         addClassEntry();
         
         // String
         newClass("String", new Type("Object"), 0, 0);
-        newMethod("length", new Type("Int"), true, 0, 0);
+        newMethod("length", new Type("Int"), false, 0, 0);
         addMethodEntry();
-        newMethod("concat", new Type("String"), true, 0, 0);
+        newMethod("concat", new Type("String"), false, 0, 0);
         addParameter("s", new Type("String"), 0,0);
         addMethodEntry();
-        newMethod("substr", new Type("String"), true, 0, 0);
+        newMethod("substr", new Type("String"), false, 0, 0);
         addParameter("i", new Type("Int"), 0,0);
         addParameter("l", new Type("Int"), 0,0);
         addMethodEntry();
@@ -196,7 +196,7 @@ public class SymbolTable {
      * @param nameClass the name of class
      * @return true if it exists
      */
-    private boolean existClassName(String nameClass){
+    public boolean existClassName(String nameClass){
         return classes.containsKey(nameClass);
     }
     
@@ -265,6 +265,13 @@ public class SymbolTable {
                           int row,
                           int col)
         throws SemanticDeclarationException{
+        
+        // Main must not have constructor, init
+        if (currentClass.getId().equals("Main") 
+            && methodName.equals("init")){
+            throwException("Main must not have constructor",
+                           row, col);
+        }
         
         if (currentClass.existsMethod(methodName)){
             throwException("Repeated method name in class "
@@ -347,9 +354,9 @@ public class SymbolTable {
         
         LocalStruct parameter = new LocalStruct(parameterName,
                                                 type,
+                                                numParameter,
                                                 row,
-                                                col,
-                                                numParameter);
+                                                col);
         
         currentMethod.addParameter(parameter);
         numParameter += 1;
@@ -428,11 +435,18 @@ public class SymbolTable {
             MethodStruct m = e.getHashMapMethods().get("init");
             
             if (m != null){
-                if (m.isStatic() || !m.getType().compare(e.getId())){
+                if (m.isStatic() || !m.getType().strongComparison(e.getId())){
                     throwException("Wrong definition in constructor, "
                                    + e.getId() + " class",
                                    m.getRow(), m.getCol());
                 }
+            }
+            // Add constructor
+            else {
+                e.addMethod(new MethodStruct("init", 
+                                             new Type(e.getId()), 
+                                             0, 0, 0, 
+                                             false));
             }
         }
     }
@@ -497,7 +511,9 @@ public class SymbolTable {
             
             // Add inherited attributes
             for (AttributeStruct a: attributesInSuperClass.values()){
-                e.addAttribute(a);
+                if (!a.isPrivate()){
+                    e.addAttribute(a);
+                }
             }
         }
     }
@@ -538,7 +554,7 @@ public class SymbolTable {
                 }
                 
                 // Check if exists type to return
-                if (!m.getType().compare("void")
+                if (!m.getType().strongComparison("void")
                     && !classes.containsKey(m.getType().toString())){
                     
                     throwException("Type to return " + m.getType().toString()
@@ -573,7 +589,7 @@ public class SymbolTable {
                     
                     // Check signature
                     // Check return type
-                    if (!m.getType().compare(supMethod.getType().toString())){
+                    if (!m.getType().strongComparison(supMethod.getType().toStringIfArray())){
                         throwException("Method overriden: return type must be equal",
                                        m.getRow(), m.getCol());
                     }                    
@@ -606,7 +622,7 @@ public class SymbolTable {
             
             // Add inherited methods
             for (MethodStruct m: methodsInSuperClass.values()){
-                if (!m.getId().equals("init")){
+                if (!m.getId().equals("init") && !m.isStatic()){
                     e.addMethod(m);
                 }
             }
@@ -627,5 +643,92 @@ public class SymbolTable {
         table.put("clases", classes);
         
         return table;
+    }
+    
+    // Get methods (for AST)
+    
+    /**
+     * 
+     * @return 
+     */
+    public String getNameCurrentMethod(){
+        return currentMethod.getId();
+    }
+    
+    /**
+     * Gets method type in specified class
+     * 
+     * @param classN the name of class
+     * @param method the name of method
+     * @return the type of method in class
+     */
+    public Type getTypeMethod(String classN,
+                              String method){
+        return classes.get(classN).getMethodType(method);
+    }
+    
+    public boolean existsMethod(String classN,
+                                String method){
+        return classes.get(classN).existsMethod(method);
+    }
+    
+    public Type getTypeVar(String className,
+                                String methodName,
+                                String id){
+        
+        return classes.get(className).getTypeVar(methodName, id);
+    }
+    
+    public Type getTypeAtt(String className,
+                           String id){
+        
+        return classes.get(className).getTypeAtt(id);
+    }
+    
+    /**
+     * Gets list of parameters on method
+     * 
+     * @param className the name of class that contains the method
+     * @param methodName the name of method to return parameters
+     * @return the variables Collection
+     */
+    public Collection<LocalStruct> getParameters(String className,
+                                                 String methodName){
+        return classes.get(className).getParameters(methodName);
+    }
+    
+    /**
+     * Determines that type "sub" inherits from type "sup"
+     * 
+     * @param sup the potential superclass
+     * @param sub the potential subclass
+     * @return true when sub inherits from sup
+     */
+    public boolean polymorphism(Type sup,
+                                Type sub){
+        
+        String supp = sup.toStringIfArray();
+        String subb = sub.toStringIfArray();
+        ClassStruct e;
+        
+        if (sup.strongComparison(sub)){
+            return false;
+        }
+        
+        do{
+            e = classes.get(subb); //dont works with Array Int -> there is capture Array
+            if (e != null){
+                if(e.getSuperClass().equals(supp)){
+                    return true;
+                }
+                subb = e.getSuperClass();
+            }
+        } while (!subb.equals("Object"));
+        
+        return false;
+    }
+    
+    public MethodStruct getMethod(String idClass, String idMethod){
+        return classes.get(idClass).getMethod(idMethod);
     }
 }
