@@ -155,4 +155,11 @@ public class ChainingNode extends ChainNode {
         
         return json;
     }
+    
+    public void getCode(){
+        node.getCode();
+        if (chain != null){
+            chain.getCode();
+        }
+    }
 }

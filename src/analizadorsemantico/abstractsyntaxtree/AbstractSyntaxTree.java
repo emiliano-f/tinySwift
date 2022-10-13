@@ -51,6 +51,15 @@ public class AbstractSyntaxTree {
     }
     
     /**
+     * Gets list of classes
+     * 
+     * @return the ArrayList with ClassNodes
+     */
+    public ArrayList<ClassNode> getClasses(){
+        return classes;
+    }
+    
+    /**
      * Check types inference AST
      * precondition: symbol table consolidation
      * 

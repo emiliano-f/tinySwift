@@ -2,6 +2,11 @@ package analizadorsemantico.abstractsyntaxtree.expressions;
 
 import analizadorsemantico.symboltable.SymbolTable;
 import analizadorsemantico.symboltable.Type;
+import codegeneration.CodeGenerator;
+import static codegeneration.CodeGenerator.body;
+import static codegeneration.CodeGenerator.bodyD;
+import static codegeneration.CodeGenerator.labelD;
+import static codegeneration.CodeGenerator.table;
 import parser.json.JSONObject;
 
 /**
@@ -64,5 +69,34 @@ public class LiteralNode extends ExpressionNode {
         json.put("tipo", getType().toStringIfArray());
         
         return json;
+    }
+    
+    @Override
+    public void getCode(){
+        //bodyD.append(labelD).append(":\n");
+        String type = getType().toString();
+        switch (type){
+            case "Int":
+                body.append("\tli $t0, ").append(literal).append('\n');
+                CodeGenerator.temp.append("Int");
+                break;
+            case "Bool":
+                body.append("\tli $t0, ");
+                if (literal.equals("true")) body.append("0\n");
+                else body.append("1\n");
+                CodeGenerator.temp.append("Bool");
+                break;
+            case "Char":
+                body.append("\tli $t0, '").append(literal).append("'\n");
+                CodeGenerator.temp.append("Char");
+                break;
+            case "String":
+                // Body for .data
+                bodyD.append(labelD).append(":\n");
+                bodyD.append("\t.asciiz ");
+                bodyD.append('"').append(literal).append("\"\n");
+                // See getCodeObject() for String in VarNode
+                CodeGenerator.temp.append("String");
+        }
     }
 }

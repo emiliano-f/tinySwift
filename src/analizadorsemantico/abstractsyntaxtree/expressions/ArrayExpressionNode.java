@@ -144,4 +144,9 @@ public class ArrayExpressionNode extends ExpressionNode {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

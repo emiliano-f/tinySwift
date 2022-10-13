@@ -70,4 +70,9 @@ public class WhileNode extends Node {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

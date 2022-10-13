@@ -429,24 +429,36 @@ public class SymbolTable {
     private void correctConstructors()
         throws SemanticDeclarationException {
         
+        String name;
+        
         for (ClassStruct e: classesLoaded){
             
-            // Get constructor (method called init)
-            MethodStruct m = e.getHashMapMethods().get("init");
+            name = e.getId();
             
-            if (m != null){
-                if (m.isStatic() || !m.getType().strongComparison(e.getId())){
-                    throwException("Wrong definition in constructor, "
-                                   + e.getId() + " class",
-                                   m.getRow(), m.getCol());
+            // Not add init method to Int, Bool, Char and String (opc Array, Main)
+            if (!(name.equals("Int")
+                || name.equals("Bool")
+                || name.equals("Char")
+                || name.equals("String")
+                || name.equals("Main")
+                || name.equals("Array"))){
+                // Get constructor (method called init)
+                MethodStruct m = e.getHashMapMethods().get("init");
+
+                if (m != null){
+                    if (m.isStatic() || !m.getType().strongComparison(e.getId())){
+                        throwException("Wrong definition in constructor, "
+                                       + e.getId() + " class",
+                                       m.getRow(), m.getCol());
+                    }
                 }
-            }
-            // Add constructor
-            else {
-                e.addMethod(new MethodStruct("init", 
-                                             new Type(e.getId()), 
-                                             0, 0, 0, 
-                                             false));
+                // Add constructor
+                else {
+                    e.addMethod(new MethodStruct("init", 
+                                                 new Type(e.getId()), 
+                                                 0, 0, 0, 
+                                                 false));
+                }
             }
         }
     }
@@ -673,10 +685,16 @@ public class SymbolTable {
     }
     
     public Type getTypeVar(String className,
-                                String methodName,
-                                String id){
+                           String methodName,
+                           String id){
         
         return classes.get(className).getTypeVar(methodName, id);
+    }
+    
+    public Type getTypeLocal(String className,
+                             String methodName,
+                             String id){
+        return classes.get(className).getTypeLocal(methodName, id);
     }
     
     public Type getTypeAtt(String className,
@@ -707,13 +725,22 @@ public class SymbolTable {
     public boolean polymorphism(Type sup,
                                 Type sub){
         
-        String supp = sup.toStringIfArray();
-        String subb = sub.toStringIfArray();
-        ClassStruct e;
-        
+        // Polymorphism is not necessary
         if (sup.strongComparison(sub)){
             return false;
         }
+        
+        String subb, supp;
+        
+        // Array. (assume array cannot be inherited)
+        if (sup.isArray()){
+            return sup.strongComparison(sub);
+        }
+        
+        supp = sup.toStringIfArray();
+        subb = sub.toStringIfArray();
+        
+        ClassStruct e;
         
         do{
             e = classes.get(subb); //dont works with Array Int -> there is capture Array
@@ -730,5 +757,53 @@ public class SymbolTable {
     
     public MethodStruct getMethod(String idClass, String idMethod){
         return classes.get(idClass).getMethod(idMethod);
+    }
+    
+    public Collection<ClassStruct> getClasses(){
+        return classes.values();
+    }
+    
+    /*
+     * Only for currentClass and currentMethod attributes
+     */
+    
+    public void setCurrentClass(String className){
+        currentClass = classes.get(className);
+    }
+    
+    public void setCurrentMethod(String methodName){
+        currentMethod = currentClass.getMethod(methodName);
+    }
+    
+    public int getParameterPosition(String id){
+        return currentMethod.getParameterPosition(id);
+    }
+    
+    public int getVariablePosition(String id){
+        return currentMethod.getVariablePosition(id);
+    }
+    
+    public boolean isParameter(String id){
+        return currentMethod.isParameter(id);
+    }
+    
+    public boolean isVariable(String id){
+        return currentMethod.isVariable(id);
+    }
+    
+    public int getParametersCant(){
+        return currentMethod.getSizeParameters();
+    }
+    
+    public int getVariablesCant(){
+        return currentMethod.getSizeVariables();
+    }
+    
+    public Type getTypeVar(String id){
+        return currentMethod.getTypeVar(id);
+    }
+    
+    public Collection<AttributeStruct> getAttributesList(String className){
+        return classes.get(className).getAttributes();
     }
 }

@@ -56,4 +56,24 @@ public class AttributeStruct extends Struct{
         
         return attribute;
     }
+    
+    @Deprecated
+    public void getCode(StringBuilder label, StringBuilder body){
+        label.append(getId());
+        body.append(getId() + "\n:");
+        if (!getType().isArray()){
+            switch (getType().toString()){
+                case "Int":
+                case "Bool":
+                    body.append("\t.word 4 \n");
+                    break;
+                case "Char":
+                case "String":
+                    body.append("\t.asciiz \"\"");
+                    break;
+                default:
+                    body.append(".space 8");
+            }
+        }
+    }
 }

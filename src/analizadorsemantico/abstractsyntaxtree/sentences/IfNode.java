@@ -81,4 +81,9 @@ public class IfNode extends Node {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

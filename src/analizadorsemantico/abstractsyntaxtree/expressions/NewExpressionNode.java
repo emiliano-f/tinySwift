@@ -4,6 +4,11 @@ import analizadorsemantico.SemanticSentenceException;
 import analizadorsemantico.symboltable.LocalStruct;
 import analizadorsemantico.symboltable.SymbolTable;
 import analizadorsemantico.symboltable.Type;
+import codegeneration.CodeGenerator;
+import static codegeneration.CodeGenerator.body;
+import static codegeneration.CodeGenerator.bodyD;
+import static codegeneration.CodeGenerator.labelD;
+import static codegeneration.CodeGenerator.table;
 import java.util.ArrayList;
 import java.util.Collection;
 import parser.json.JSONArray;
@@ -52,7 +57,6 @@ public class NewExpressionNode extends ExpressionNode {
     
     /**
      * Actions:
-     *          
      * 
      * @param table the symbol table
      * @param className the class that contains this object
@@ -75,10 +79,21 @@ public class NewExpressionNode extends ExpressionNode {
             setType(new Type(idClass, true));
             expression.check(table, className, methodName);
             
+            // Index must be LiteralNode
+            if (!(expression instanceof LiteralNode)){
+                throwException("Index expression must be int literal", 
+                               expression.getLine());
+            }
+            
             if (!expression.getType().strongComparison("Int")){
                 throwException("Expression on index array must be Int type but it is "
                                + expression.getType().toStringIfArray(),
-                               + expression.getLine());
+                               expression.getLine());
+            }
+            
+            if (Integer.valueOf(((LiteralNode) expression).getLiteral()) < 0){
+                throwException("Index must be >= 0",
+                               expression.getLine());
             }
         }
         // New Object
@@ -149,5 +164,34 @@ public class NewExpressionNode extends ExpressionNode {
         }
         
         return json;
+    }
+    
+    @Override
+    public void getCode(){
+        
+        Type type;
+        if (args == null){
+            CodeGenerator.temp.append("Array");
+            // It is LiteralNode
+            int index = Integer.valueOf(((LiteralNode) expression).getLiteral());
+            // Add to data
+            bodyD.append(":\n\t.word ").append(index);
+            bodyD.append("\n\t.space ").append(4*index).append('\n');
+        }
+        else{
+            // See VarNode
+            CodeGenerator.temp.append(idClass);
+            body.append("\t#New Object\n");
+            
+            // Push in next frame (parameters)
+            // -4: fp y ra 
+            int offset = -4-4*(table.getMethod(idClass, "init").getSizeParameters());
+            for (ExpressionNode e: args){
+                e.getCode();
+                body.append("\tsw $t0, ").append(offset).append("($sp)\n");
+                offset += 4;
+            }
+            body.append("\tjal ").append(idClass).append("_init\n");
+        }
     }
 }

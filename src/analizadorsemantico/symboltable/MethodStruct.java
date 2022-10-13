@@ -196,4 +196,20 @@ public class MethodStruct extends Struct {
         
         return typeVar;
     }
+    
+    public int getParameterPosition(String id){
+        return parameters.get(id).getPosition();
+    }
+    
+    public int getVariablePosition(String id){
+        return variables.get(id).getPosition();
+    }
+    
+    public boolean isParameter(String local){
+        return parameters.containsKey(local); 
+    }
+    
+    public boolean isVariable(String local){
+        return variables.containsKey(local);
+    }
 }

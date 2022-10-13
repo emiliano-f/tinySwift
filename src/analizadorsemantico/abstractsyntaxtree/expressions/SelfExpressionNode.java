@@ -66,4 +66,9 @@ public class SelfExpressionNode extends ExpressionNode {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

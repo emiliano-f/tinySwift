@@ -125,4 +125,6 @@ public abstract class Node {
      * @return the JSONObject
      */
     abstract public JSONObject toJSON();
+    
+    abstract public void getCode();
 }

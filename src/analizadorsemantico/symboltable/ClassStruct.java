@@ -191,6 +191,12 @@ public class ClassStruct extends Struct {
         return type;
     }
     
+    public Type getTypeLocal(String method,
+                             String id){
+        Type type = methods.get(method).getTypeVar(id);
+        return type;
+    }
+    
     public Type getTypeAtt(String id){
         
         Type type = null;

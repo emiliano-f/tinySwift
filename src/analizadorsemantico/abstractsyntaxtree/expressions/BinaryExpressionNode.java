@@ -4,6 +4,7 @@ import analizadorsemantico.SemanticSentenceException;
 import analizadorsemantico.abstractsyntaxtree.Node;
 import analizadorsemantico.symboltable.SymbolTable;
 import analizadorsemantico.symboltable.Type;
+import static codegeneration.CodeGenerator.body;
 import parser.json.JSONObject;
 
 /**
@@ -155,5 +156,55 @@ public class BinaryExpressionNode extends ExpressionNode {
         json.put("operando2", rightOp.toJSON());
         
         return json;
+    }
+    
+    @Override
+    public void getCode(){
+        leftOp.getCode();
+        body.append("\tmove $t1, $t0");
+        rightOp.getCode();
+        switch (operator.getOperator()){
+            case "+":
+                body.append("\tadd $t0, $t1, $t0");
+                break;
+            case "-":
+                body.append("\tsub $t0, $t1, $t0");
+                break;
+            case "*":
+                body.append("\tmul $t0, $t1, $t0");
+                break;
+            case "/":
+                body.append("\tdiv $t1, $t0");
+                body.append("\tmflo $t0");
+                break;
+            case "%":
+                body.append("\tdiv $t1, $t0");
+                body.append("\tmfhi $t0");
+                break;
+            case "&&": // "&& or" is correct
+                body.append("\tor $t0, $t1, $t0\n");
+                break;
+            case "||": // "|| and" is correct
+                body.append("\tand $t0, $t1, $t0\n");
+                break;
+            case "<":
+                body.append("\tsge $t0, $t1, $t0");
+                break;
+            case ">":
+                body.append("\tsle $t0, $t1, $t0");
+                break;
+            case "<=":
+                body.append("\tsgt $t0, $t1, $t0");
+                break;
+            case ">=":
+                body.append("\tslt $t0, $t1, $t0");
+                break;
+            case "==":
+                body.append("\tsne $t0, $t1, $t0");
+                break;
+            case "!=":
+                body.append("\tseq $t0, $t1, $t0");
+                break;
+        }
     }
 }

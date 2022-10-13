@@ -180,4 +180,12 @@ public class ChainingExpressionNode extends ExpressionNode {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        expression.getCode();
+        if (chain != null){
+            chain.getCode();
+        }
+    }
 }

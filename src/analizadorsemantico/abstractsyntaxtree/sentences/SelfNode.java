@@ -65,4 +65,9 @@ public class SelfNode extends ChainNode {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

@@ -88,4 +88,9 @@ public class ReturnNode extends Node{
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

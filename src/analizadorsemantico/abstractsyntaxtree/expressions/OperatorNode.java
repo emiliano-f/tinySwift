@@ -49,4 +49,9 @@ public class OperatorNode extends Node {
         
         return json;
     }
+    
+    @Override
+    public void getCode(){
+        
+    }
 }

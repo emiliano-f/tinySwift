@@ -3,6 +3,7 @@ package analizadorsemantico.abstractsyntaxtree.expressions;
 import analizadorsemantico.SemanticSentenceException;
 import analizadorsemantico.symboltable.SymbolTable;
 import analizadorsemantico.symboltable.Type;
+import codegeneration.CodeGenerator;
 import parser.json.JSONObject;
 
 /**
@@ -77,5 +78,10 @@ public class StaticCallExpressionNode extends ExpressionNode {
         json.put("identificador", idClass);
         
         return json;
+    }
+    
+    @Override
+    public void getCode(){
+        CodeGenerator.temp.append(idClass);
     }
 }

@@ -3,6 +3,7 @@ package analizadorsemantico.abstractsyntaxtree.expressions;
 import analizadorsemantico.SemanticSentenceException;
 import analizadorsemantico.abstractsyntaxtree.Node;
 import analizadorsemantico.symboltable.SymbolTable;
+import static codegeneration.CodeGenerator.body;
 import parser.json.JSONObject;
 
 /**
@@ -85,5 +86,19 @@ public class UnaryExpressionNode extends ExpressionNode {
         json.put("operando", operand.toJSON());
         
         return json;
+    }
+    
+    @Override
+    public void getCode(){
+        // Get code for expression in operand
+        operand.getCode();
+        // Generates code for expression
+        if (opUnario.getOperator().equals("-")){
+            body.append("\tnegu $t0, $t0");
+        }
+        else if (opUnario.getOperator().equals("!")){
+            // Sub and absolute value
+            body.append("\tsub $t0, $t0, 1\n\tabs $t0, $t0");
+        }
     }
 }

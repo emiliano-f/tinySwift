@@ -59,10 +59,7 @@ public class AnalizadorLexico {
                 e.printStackTrace();
                 throw e;
             }
-            
         }
-        
-        
     }
     
     /**
