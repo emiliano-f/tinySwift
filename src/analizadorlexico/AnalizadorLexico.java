@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
  * @author D. Emiliano F.
  * @see ejecutador.Ejecutador
  */
-class AnalizadorLexico {
+public class AnalizadorLexico {
     
     // Current line in file
     private int row;
@@ -27,6 +27,8 @@ class AnalizadorLexico {
     private ArrayList<String> file = new ArrayList();
     // Tokens Table 
     private ArrayList<Token> table;
+    // Name of file
+    private String nameFile;
     
     /**
      * Class constructor
@@ -57,10 +59,7 @@ class AnalizadorLexico {
                 e.printStackTrace();
                 throw e;
             }
-            
         }
-        
-        
     }
     
     /**
@@ -76,11 +75,16 @@ class AnalizadorLexico {
         
         // index of '.'
         int dot = args[0].lastIndexOf('.');
+        nameFile = args[0].substring(0, dot);
         if (dot == -1 || !args[0].regionMatches(true, dot+1, "swift", 0, 5)){
             throw new IllegalArgumentException("Invalid name of file");
         }
     
         return true;
+    }
+    
+    public String getNameOfFile(){
+        return nameFile;
     }
     
     /**
@@ -107,12 +111,50 @@ class AnalizadorLexico {
         
         // Delete first symbol '"' from stringlit
         if (token.equals("stringlit") || token.equals("charlit")){
+            // check regex
+            if (!validLit(lexeme)){
+                throw new IllegalTokenException(getRow(),
+                                                getColumn(),
+                                                "Invalid string literal: symbol"
+                                                + " not supported");
+            }    
             lexeme = lexeme.substring(1, lexeme.length());
+        }
+        
+        if (token.equals("id") || token.equals("idclass")){
+            if (!validId(lexeme)){
+                throw new IllegalTokenException(getRow(),
+                                                getColumn(),
+                                                "Invalid string literal: symbol"
+                                                + " not supported");
+            }
         }
         
         return new Token(token,
                          lexeme, 
-                         getRow());
+                         getRow(),
+                         getColumn());
+    }
+    
+    private boolean validLit(String lexeme){
+        for (int i=0; i<lexeme.length(); ++i){
+            if ((int)lexeme.charAt(i) < 32 || (int)lexeme.charAt(i) > 127){
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private boolean validId(String lexeme){
+        for (int i=0; i<lexeme.length(); ++i){
+            if (!Character.isDigit(lexeme.charAt(i)) &&
+                !((int)lexeme.charAt(i) > 64 && (int)lexeme.charAt(i) < 91) &&
+                !((int)lexeme.charAt(i) > 96 && (int)lexeme.charAt(i) < 123) &&
+                lexeme.charAt(i) != '_' ){
+                return false;
+            }
+        }
+        return true;
     }
     
     /**
@@ -488,10 +530,10 @@ class AnalizadorLexico {
                            "comma", "dot", "mod",
                            "assign", "lbracket", "rbracket",
                            "plus", "minus", "ast",
-                           "div", "excmark", "less",
+                           "div", "not", "less",
                            "greater", "leq", "geq",
                            "or", "and", "noteq", 
-                           "equal", "if", "null",
+                           "equal", "if", "nil",
                            "var", "new", "int", 
                            "init",
                            "self", "void", "func", 
@@ -518,7 +560,7 @@ class AnalizadorLexico {
                             "String", "return", "private"};
                            
         for (int i=0; i<lexemes.length; i++){
-            table.add(new Token(tokens[i], lexemes[i], lexemes[i].length()));
+            table.add(new Token(tokens[i], lexemes[i], lexemes[i].length(),0));
         }
         
         return table;        

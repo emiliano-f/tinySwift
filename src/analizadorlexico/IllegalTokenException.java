@@ -7,7 +7,7 @@ package analizadorlexico;
  * @see analizadorlexico.AnalizadorLexico
  */
 
-class IllegalTokenException extends Exception {
+public class IllegalTokenException extends Exception {
     
     int row;
     int column;
@@ -18,9 +18,9 @@ class IllegalTokenException extends Exception {
      * @param column current column in file
      * @param description error description
      */
-    IllegalTokenException(int row,
-                          int column,
-                          String description) {
+    public IllegalTokenException(int row,
+                                 int column,
+                                 String description) {
         super(description);
         this.row = row;
         this.column = column;

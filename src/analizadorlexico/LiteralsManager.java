@@ -21,7 +21,7 @@ class LiteralsManager extends Manager {
      * @param row the current row (line number)
      * @param column the current column in line
      * @return Line, row and column updated
-     * @throws NoSuchTokenException if the string is incomplete ('"' not found)
+     * @throws IllegalTokenException if the string is incomplete ('"' not found)
      */
     static Location stringConsumption(ArrayList file,
                                       String line,
@@ -113,12 +113,12 @@ class LiteralsManager extends Manager {
             
             if (line.charAt(column) != '\''){
                 throw new IllegalTokenException(row, column,
-                                                "Invalid char literal");
+                                                "Illegal char literal");
             }
         }
         catch (IndexOutOfBoundsException e){
             throw new IllegalTokenException(row, column,
-                                            "Unterminated char literal");
+                                            "Illegal char literal");
         }
         
         column += 1; 

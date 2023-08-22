@@ -7,27 +7,30 @@ package analizadorlexico;
  * @see analizadorlexico.AnalizadorLexico;
  */
 
-class Token {
+public class Token {
     
     private String token;
     private String lexem;
-    private int var;
+    private int row;
+    private int column;
     
     /**
      * @param token the name of value
      * @param lexem the value of token
      * @param var ubication in file or length ef lexeme
      */
-    Token(String token,
-          String lexem,
-          int var){
+    public Token(String token,
+                 String lexem,
+                 int row,
+                 int column){
         
-        if (var < 1){
+        if (row < 1){
             throw new IllegalArgumentException("Invalid line number");
         }
         this.token = token;
         this.lexem = lexem;
-        this.var = var;
+        this.row = row;
+        this.column = column;
     }
     
     public String getToken(){
@@ -39,10 +42,14 @@ class Token {
     }
     
     public int getLine(){
-        return var;
+        return row;
+    }
+    
+    public int getColumn(){
+        return column;
     }
     
     public int getLexemeLength(){
-        return var;
+        return row;
     }
 }
